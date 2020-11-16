@@ -10,11 +10,11 @@ public class Restaurant {
     private int clientsBroughtOrders;
     private int clientsBroughtOrdersTotal;
 
-    private final Object monitor1 = new Object();
-    private final Object monitor2 = new Object();
-    private final Object monitor3 = new Object();
-    private final Object monitor4 = new Object();
-    private final Object monitor5 = new Object();
+    private final Object readyToMakeOrderMonitor = new Object();
+    private final Object clientsOrdersMonitor = new Object();
+    private final Object clientsReadyOrdersMonitor = new Object();
+    private final Object broughtOrdersMonitor = new Object();
+    private final Object enterMonitor = new Object();
 
     public Restaurant() {
     }
@@ -29,25 +29,25 @@ public class Restaurant {
     }
 
     public void enter() {
-        synchronized (monitor5) {
+        synchronized (enterMonitor) {
             Util.sleep(SLEEP_TIME);
             System.out.println(Thread.currentThread().getName() + " вошел в ресторан");
         }
     }
 
     public void callWaiter() {
-        synchronized (this.monitor1) {
+        synchronized (this.readyToMakeOrderMonitor) {
             System.out.println(Thread.currentThread().getName() + " готов сделать заказ");
             this.clientsReadyToMakeOrder++;
-            this.monitor1.notifyAll();
+            this.readyToMakeOrderMonitor.notifyAll();
         }
 
     }
 
     public void takeOrder() {
-        synchronized (this.monitor1) {
+        synchronized (this.readyToMakeOrderMonitor) {
             while (this.clientsReadyToMakeOrder <= 0 && clientsReadyToMakeOrderTotal<MAX_ORDERS) {
-                Util.wait(this.monitor1);
+                Util.wait(this.readyToMakeOrderMonitor);
             }
             if (clientsReadyToMakeOrderTotal>=MAX_ORDERS){
                 return;
@@ -58,17 +58,17 @@ public class Restaurant {
             this.clientsReadyToMakeOrderTotal++;
         }
 
-        synchronized (this.monitor2) {
+        synchronized (this.clientsOrdersMonitor) {
             System.out.println(Thread.currentThread().getName() + " передал повару");
             this.clientsOrders++;
-            this.monitor2.notifyAll();
+            this.clientsOrdersMonitor.notifyAll();
         }
     }
 
     public void cookDish() {
-        synchronized (this.monitor2) {
+        synchronized (this.clientsOrdersMonitor) {
             while (this.clientsOrders <= 0 && clientsReadyOrdersTotal < MAX_ORDERS) {
-                Util.wait(this.monitor2);
+                Util.wait(this.clientsOrdersMonitor);
             }
             if (clientsReadyOrdersTotal >= MAX_ORDERS) {
                 return;
@@ -80,18 +80,18 @@ public class Restaurant {
             this.clientsReadyOrdersTotal++;
         }
 
-        synchronized (this.monitor3) {
+        synchronized (this.clientsReadyOrdersMonitor) {
             System.out.println(Thread.currentThread().getName() + " закончил готовить");
             this.clientsReadyOrders++;
-            this.monitor3.notifyAll();
+            this.clientsReadyOrdersMonitor.notifyAll();
         }
     }
 
     public void bringOrder() {
-        synchronized (this.monitor3) {
+        synchronized (this.clientsReadyOrdersMonitor) {
             while (this.clientsReadyOrders <= 0 && clientsBroughtOrdersTotal<MAX_ORDERS) {
                 System.out.println(Thread.currentThread().getName() + clientsBroughtOrdersTotal);
-                Util.wait(this.monitor3);
+                Util.wait(this.clientsReadyOrdersMonitor);
             }
             if (clientsBroughtOrdersTotal>=MAX_ORDERS){
                 return;
@@ -103,17 +103,17 @@ public class Restaurant {
             this.clientsBroughtOrdersTotal++;
         }
 
-        synchronized (this.monitor4) {
+        synchronized (this.broughtOrdersMonitor) {
             System.out.println(Thread.currentThread().getName() + " несет заказ посетителю");
             this.clientsBroughtOrders++;
-            this.monitor4.notifyAll();
+            this.broughtOrdersMonitor.notifyAll();
         }
     }
 
     public void eatOrder() {
-        synchronized (this.monitor4) {
+        synchronized (this.broughtOrdersMonitor) {
             while (this.clientsBroughtOrders <= 0) {
-                Util.wait(this.monitor4);
+                Util.wait(this.broughtOrdersMonitor);
             }
             System.out.println(Thread.currentThread().getName() + " ест заказ");
             Util.sleep(SLEEP_TIME);
